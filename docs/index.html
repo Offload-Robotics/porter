@@ -1,0 +1,970 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Offload Porter Retail Intelligence Demo</title>
+  <style>
+    :root {
+      --bg: #090509;
+      --panel: #120c12;
+      --panel-2: #191019;
+      --panel-3: #211621;
+      --line: #302331;
+      --text: #f7f1f5;
+      --muted: #a99aa6;
+      --faint: #756875;
+      --pink: #ff3d68;
+      --pink-2: #ff6b8e;
+      --pink-soft: rgba(255, 61, 104, .14);
+      --green: #22c58b;
+      --amber: #ffb84d;
+      --red: #ff5668;
+      --blue: #6aa8ff;
+      --radius: 8px;
+      --shadow: 0 18px 60px rgba(0, 0, 0, .35);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, Arial, sans-serif;
+      background: radial-gradient(circle at 80% 0%, rgba(255,61,104,.16), transparent 34%), var(--bg);
+      color: var(--text);
+    }
+    button, select { font: inherit; }
+    .app { min-height: 100vh; display: grid; grid-template-columns: 224px 1fr; }
+    .side {
+      border-right: 1px solid var(--line);
+      background: rgba(8, 4, 8, .92);
+      padding: 18px 14px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 22px; }
+    .mark {
+      width: 30px; height: 30px; border-radius: 7px; border: 1px solid #fff2;
+      position: relative; background: #0e090e;
+    }
+    .mark:before { content: ""; position: absolute; left: 7px; top: 7px; width: 13px; height: 13px; border-left: 3px solid #fff; border-bottom: 3px solid #fff; }
+    .mark:after { content: ""; position: absolute; right: 6px; bottom: 8px; width: 11px; height: 3px; background: var(--pink); border-radius: 8px; }
+    .brand strong { font-size: 18px; letter-spacing: -.02em; }
+    .tagline { color: var(--muted); font-size: 12px; line-height: 1.4; margin-bottom: 20px; }
+    .tagline b { color: var(--pink); }
+    .nav { display: grid; gap: 6px; }
+    .nav button {
+      text-align: left;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--muted);
+      padding: 10px 11px;
+      border-radius: 7px;
+      cursor: pointer;
+    }
+    .nav button.active {
+      color: var(--text);
+      background: var(--panel-2);
+      border-color: var(--line);
+      box-shadow: inset 3px 0 0 var(--pink);
+    }
+    .side-foot { position: absolute; bottom: 18px; left: 14px; right: 14px; color: var(--faint); font-size: 11px; line-height: 1.45; }
+    main { padding: 18px; min-width: 0; }
+    .top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    h1 { margin: 0; font-size: 20px; letter-spacing: -.02em; }
+    .subhead { color: var(--muted); font-size: 13px; margin-top: 5px; }
+    .pills { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+    .pill {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--muted);
+      border-radius: 999px;
+      padding: 7px 10px;
+      font-size: 12px;
+    }
+    .link-pill { text-decoration: none; color: var(--text); }
+    .pill.live:before {
+      content: "";
+      display: inline-block;
+      width: 7px; height: 7px; margin-right: 6px;
+      background: var(--pink);
+      border-radius: 99px;
+      box-shadow: 0 0 0 5px rgba(255,61,104,.1);
+    }
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      border: 1px solid var(--line);
+      background: rgba(18,12,18,.72);
+      border-radius: var(--radius);
+      padding: 10px;
+      margin-bottom: 14px;
+    }
+    .toolbar label { color: var(--muted); font-size: 12px; }
+    select {
+      color: var(--text);
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 7px 9px;
+      outline: none;
+    }
+    .tabs { display: none; }
+    .tabs.active { display: block; }
+    .metrics { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin-bottom: 10px; }
+    .metric, .card {
+      background: linear-gradient(180deg, rgba(33,22,33,.94), rgba(18,12,18,.96));
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .metric { padding: 13px; min-height: 96px; }
+    .metric .label { color: var(--muted); font-size: 12px; margin-bottom: 9px; }
+    .metric .value { font-size: 25px; font-weight: 700; letter-spacing: -.04em; }
+    .metric .delta { margin-top: 7px; color: var(--faint); font-size: 11px; }
+    .delta.good { color: var(--green); }
+    .delta.warn { color: var(--amber); }
+    .delta.bad { color: var(--red); }
+    .grid-2 { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: 10px; margin-bottom: 10px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 10px; }
+    .card { padding: 14px; min-width: 0; }
+    .card-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--text); font-weight: 700; font-size: 13px; margin-bottom: 12px; }
+    .card-title span { color: var(--faint); font-size: 11px; font-weight: 500; }
+    .chart { width: 100%; height: 240px; display: block; }
+    .short { height: 170px; }
+    .row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); }
+    .row[data-tip], .inventory-table tr[data-tip], .insight[data-tip], svg [data-tip] { cursor: pointer; }
+    .row[data-tip]:hover, .inventory-table tr[data-tip]:hover, .insight[data-tip]:hover {
+      background: rgba(255, 61, 104, .055);
+    }
+    .row:last-child { border-bottom: 0; }
+    .row-main { flex: 1; min-width: 0; }
+    .row-name { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .row-sub { color: var(--faint); font-size: 11px; margin-top: 3px; }
+    .num { font-weight: 700; font-size: 13px; }
+    .bar { height: 8px; background: #2b202b; border-radius: 99px; overflow: hidden; margin-top: 7px; }
+    .fill { height: 100%; background: var(--pink); border-radius: 99px; }
+    .store-map { width: 100%; overflow: auto; }
+    svg text { font-family: Inter, Arial, sans-serif; }
+    .legend { display: flex; gap: 12px; flex-wrap: wrap; color: var(--muted); font-size: 11px; margin-top: 9px; }
+    .dot { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+    .action {
+      display: grid;
+      grid-template-columns: 86px 1fr 112px 88px;
+      gap: 12px;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+      font-size: 13px;
+    }
+    .action:last-child { border-bottom: 0; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      width: max-content;
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-size: 11px;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      background: var(--panel-2);
+    }
+    .priority-high { color: #fff; background: rgba(255,86,104,.18); border-color: rgba(255,86,104,.4); }
+    .priority-med { color: #ffd9a0; background: rgba(255,184,77,.14); border-color: rgba(255,184,77,.35); }
+    .priority-low { color: #aaf2d7; background: rgba(34,197,139,.12); border-color: rgba(34,197,139,.3); }
+    .inventory-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .inventory-table th { text-align: left; color: var(--faint); font-weight: 600; padding: 0 8px 9px; border-bottom: 1px solid var(--line); }
+    .inventory-table td { padding: 10px 8px; border-bottom: 1px solid var(--line); }
+    .inventory-table tr:last-child td { border-bottom: 0; }
+    .status { font-weight: 700; }
+    .status.red { color: var(--red); }
+    .status.amber { color: var(--amber); }
+    .status.green { color: var(--green); }
+    .insight {
+      padding: 13px;
+      background: rgba(255,255,255,.025);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+    .insight strong { display: block; font-size: 14px; margin: 7px 0; }
+    .insight p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.45; }
+    .mini { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+    .explain { color: var(--muted); font-size: 12px; line-height: 1.45; margin-top: 10px; }
+    .tooltip {
+      position: fixed;
+      pointer-events: none;
+      display: none;
+      background: #050305;
+      border: 1px solid var(--line);
+      color: var(--text);
+      padding: 8px 10px;
+      border-radius: 7px;
+      font-size: 12px;
+      box-shadow: var(--shadow);
+      z-index: 20;
+      max-width: 240px;
+    }
+    @media (max-width: 1060px) {
+      .app { grid-template-columns: 1fr; }
+      .side { position: static; height: auto; }
+      .side-foot { position: static; margin-top: 18px; }
+      .metrics { grid-template-columns: repeat(2, minmax(0,1fr)); }
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+      .action { grid-template-columns: 1fr; gap: 6px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="side">
+      <div class="brand"><div class="mark"></div><strong>offload</strong></div>
+      <div class="tagline">Smarter operations.<br><b>Happier teams.</b></div>
+      <nav class="nav">
+        <button class="active" data-tab="overview">Command Center</button>
+        <button data-tab="flow">Shopper Flow</button>
+        <button data-tab="inventory">Shelf Intelligence</button>
+        <button data-tab="actions">AI Action Queue</button>
+      </nav>
+      <div class="side-foot">
+        Porter retail intelligence for store operations, inventory, and shopper flow.
+      </div>
+    </aside>
+
+    <main>
+      <div class="top">
+        <div>
+          <h1>Porter Retail Intelligence</h1>
+          <div class="subhead">BuildMart Store #1142 - San Jose, CA - May 2026</div>
+        </div>
+        <div class="pills">
+          <div class="pill live">Live store view</div>
+          <div class="pill" id="fleet-pill">Fleet active</div>
+          <div class="pill">Home improvement format</div>
+          <a class="pill link-pill" href="Simulation.html">Simulation</a>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <div class="pill">All shoppers</div>
+        <div class="pill" id="data-note">31 days - 0 events</div>
+      </div>
+
+      <section id="overview" class="tabs active">
+        <div class="metrics" id="overview-metrics"></div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title">Assisted Trips By Day</div>
+            <svg class="chart" id="daily-chart"></svg>
+          </div>
+          <div class="card">
+            <div class="card-title">Retailer Action Queue</div>
+            <div id="queue-short"></div>
+          </div>
+        </div>
+        <div class="grid-3">
+          <div class="card">
+            <div class="card-title">Top Search Intent</div>
+            <div id="top-searches"></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Lost Sales Risk</div>
+            <svg class="chart short" id="risk-chart"></svg>
+          </div>
+          <div class="card">
+            <div class="card-title">Estimated Mission Mix</div>
+            <svg class="chart short" id="mix-chart"></svg>
+            <div class="explain">Predicted from time of day, route pattern, search intent, aisle dwell, and product category. No shopper identification required.</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="flow" class="tabs">
+        <div class="metrics" id="flow-metrics"></div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title">Store Zone Heatmap</div>
+            <div class="store-map"><svg id="store-map" viewBox="0 0 640 560" width="100%" height="560" style="display:block;min-width:420px"></svg></div>
+            <div class="legend">
+              <span><i class="dot" style="background:rgba(255,61,104,.16)"></i>Low dwell</span>
+              <span><i class="dot" style="background:rgba(255,61,104,.48)"></i>Medium</span>
+              <span><i class="dot" style="background:rgba(255,61,104,.88)"></i>High</span>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Aisle Performance</div>
+            <div id="aisle-list"></div>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title">Hourly Traffic Pattern</div>
+            <svg class="chart" id="hour-chart"></svg>
+          </div>
+          <div class="card">
+            <div class="card-title">Failed Searches</div>
+            <div id="failed-searches"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="inventory" class="tabs">
+        <div class="metrics" id="inventory-metrics"></div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title">Shelf Status</div>
+            <table class="inventory-table" id="inventory-table"></table>
+          </div>
+          <div class="card">
+            <div class="card-title">Depletion Curves</div>
+            <svg class="chart" id="depletion-chart"></svg>
+          </div>
+        </div>
+        <div class="grid-3">
+          <div class="card">
+            <div class="card-title">Phantom Inventory Flags</div>
+            <div id="phantom-list"></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Restock SLA</div>
+            <svg class="chart short" id="sla-chart"></svg>
+          </div>
+          <div class="card">
+            <div class="card-title">Backroom Opportunity</div>
+            <div id="backroom-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="actions" class="tabs">
+        <div class="metrics" id="action-metrics"></div>
+        <div class="card">
+          <div class="card-title">AI-Generated Retail Actions</div>
+          <div id="actions-list"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <div class="tooltip" id="tip"></div>
+
+  <script>
+    const brand = {
+      pink: "#ff3d68",
+      pink2: "#ff6b8e",
+      green: "#22c58b",
+      amber: "#ffb84d",
+      red: "#ff5668",
+      blue: "#6aa8ff",
+      muted: "#756875",
+      line: "#302331",
+      text: "#f7f1f5"
+    };
+
+    const aisles = [
+      { id: "garden", name: "Garden", zone: "Outdoor", base: 5.8, conv: 36, pro: .22, diy: .78, x: 510, y: 20, w: 220, h: 90 },
+      { id: "lumber", name: "Lumber", zone: "Building", base: 6.4, conv: 49, pro: .72, diy: .28, x: 32, y: 96, w: 190, h: 48 },
+      { id: "flooring", name: "Flooring", zone: "Project", base: 12.1, conv: 28, pro: .32, diy: .68, x: 32, y: 152, w: 190, h: 74 },
+      { id: "paint", name: "Paint", zone: "Project", base: 10.6, conv: 71, pro: .26, diy: .74, x: 32, y: 236, w: 190, h: 74 },
+      { id: "tools", name: "Tools & Hardware", zone: "Core", base: 14.3, conv: 66, pro: .58, diy: .42, x: 250, y: 96, w: 220, h: 92 },
+      { id: "electrical", name: "Electrical", zone: "Core", base: 7.6, conv: 57, pro: .61, diy: .39, x: 250, y: 202, w: 220, h: 58 },
+      { id: "plumbing", name: "Plumbing", zone: "Repair", base: 5.2, conv: 54, pro: .45, diy: .55, x: 250, y: 272, w: 220, h: 58 },
+      { id: "lighting", name: "Lighting & Fans", zone: "Decor", base: 4.6, conv: 42, pro: .18, diy: .82, x: 500, y: 125, w: 220, h: 58 },
+      { id: "kitchen", name: "Kitchen Showroom", zone: "Project", base: 8.9, conv: 47, pro: .22, diy: .78, x: 500, y: 195, w: 220, h: 76 },
+      { id: "appliances", name: "Appliances", zone: "Big Ticket", base: 3.7, conv: 31, pro: .16, diy: .84, x: 500, y: 285, w: 220, h: 72 },
+      { id: "checkout", name: "Checkout", zone: "Exit", base: 4.2, conv: 100, pro: .48, diy: .52, x: 250, y: 365, w: 470, h: 58 }
+    ];
+
+    const products = [
+      { sku: "M18-DRILL", name: "Milwaukee M18 Drill Kit", aisle: "tools", start: 42, shelf: 6, back: 18, unit: 199, velocity: 1.55 },
+      { sku: "BEHR-GAL", name: "Behr Premium Plus Gallon", aisle: "paint", start: 96, shelf: 18, back: 64, unit: 39, velocity: 2.35 },
+      { sku: "MULCH-BLK", name: "Black Mulch 2 cu ft", aisle: "garden", start: 180, shelf: 21, back: 280, unit: 4.48, velocity: 4.7 },
+      { sku: "OAK-34", name: "3/4 in. Oak Hardwood", aisle: "flooring", start: 58, shelf: 8, back: 24, unit: 76, velocity: 1.05 },
+      { sku: "PVC-12", name: "1/2 in. PVC Conduit", aisle: "electrical", start: 130, shelf: 42, back: 85, unit: 5, velocity: 1.7 },
+      { sku: "FLAPPER", name: "Universal Toilet Flapper", aisle: "plumbing", start: 84, shelf: 4, back: 36, unit: 8, velocity: 1.25 },
+      { sku: "OUTLET15", name: "Leviton 15A Outlet", aisle: "electrical", start: 160, shelf: 62, back: 110, unit: 1.39, velocity: 1.8 },
+      { sku: "MITER10", name: "DeWalt 10 in. Miter Saw", aisle: "tools", start: 18, shelf: 9, back: 4, unit: 249, velocity: .42 },
+      { sku: "ROLLER", name: "9 in. Paint Roller Cover", aisle: "paint", start: 220, shelf: 33, back: 120, unit: 6, velocity: 2.9 },
+      { sku: "ANCHOR", name: "Drywall Anchor Kit", aisle: "tools", start: 190, shelf: 51, back: 110, unit: 12, velocity: 2.1 }
+    ];
+
+    const searchTerms = [
+      ["mulch", "garden", 1.35], ["paint", "paint", 1.2], ["drill bits", "tools", 1.05],
+      ["toilet repair", "plumbing", .72], ["2x4", "lumber", .84], ["outlet", "electrical", .65],
+      ["flooring calculator", "flooring", .55], ["ceiling fan", "lighting", .45],
+      ["miter saw", "tools", .38], ["paint roller", "paint", .78], ["pavers", "garden", .62]
+    ];
+
+    function rng(seed) {
+      let s = seed;
+      return function() {
+        s = (s * 1664525 + 1013904223) >>> 0;
+        return s / 4294967296;
+      };
+    }
+
+    function fmt(n) { return Math.round(n).toLocaleString(); }
+    function money(n) { return "$" + (n >= 1000 ? (n / 1000).toFixed(1) + "K" : Math.round(n).toLocaleString()); }
+    function pct(n) { return Math.round(n) + "%"; }
+    function esc(s) {
+      return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    }
+    function showTip(e, html) {
+      const tip = document.getElementById("tip");
+      tip.innerHTML = html;
+      tip.style.left = e.clientX + 12 + "px";
+      tip.style.top = e.clientY + 12 + "px";
+      tip.style.display = "block";
+    }
+    function hideTip() {
+      document.getElementById("tip").style.display = "none";
+    }
+    function bindTips(root = document) {
+      root.querySelectorAll("[data-tip]").forEach(el => {
+        if (el.dataset.tipBound) return;
+        el.dataset.tipBound = "1";
+        el.addEventListener("mousemove", e => showTip(e, el.dataset.tip));
+        el.addEventListener("mouseleave", hideTip);
+      });
+    }
+
+    const data = generateMonth();
+    function generateMonth() {
+      const rand = rng(1842);
+      const days = [];
+      const trips = [];
+      const inventoryDays = [];
+      const failed = {};
+      const searches = {};
+      const productState = products.map(p => ({ ...p, onHand: p.start, shelfNow: p.shelf }));
+
+      for (let d = 1; d <= 31; d++) {
+        const dow = new Date(2026, 4, d).getDay();
+        const weekend = dow === 0 || dow === 6;
+        const warm = d >= 8 && d <= 24;
+        const dailyBase = weekend ? 405 : 270;
+        const weatherBoost = warm && weekend ? 1.18 : 1;
+        const dayTrips = Math.round(dailyBase * weatherBoost * (0.9 + rand() * .22));
+        const proShare = weekend ? .24 : (dow <= 5 && dow >= 1 ? .42 : .28);
+
+        for (let i = 0; i < dayTrips; i++) {
+          const pro = rand() < proShare;
+          const hour = pickHour(rand, weekend, pro);
+          const segment = pro ? "pro" : "diy";
+          const aisle = pickAisle(rand, pro, weekend, warm);
+          const dwell = Math.max(1.3, aisles.find(a => a.id === aisle).base * (.72 + rand() * .7));
+          const converted = rand() * 100 < aisles.find(a => a.id === aisle).conv;
+          const search = pickSearch(rand, aisle, weekend, warm);
+          searches[search[0]] = (searches[search[0]] || 0) + 1;
+          const success = converted && rand() > .08;
+          if (!success && rand() < .45) failed[search[0]] = (failed[search[0]] || 0) + 1;
+          trips.push({ day: d, dow, weekend, hour, segment, aisle, dwell, converted, search: search[0], success });
+        }
+
+        productState.forEach(p => {
+          const aisleTraffic = trips.filter(t => t.day === d && t.aisle === p.aisle).length;
+          const weekendLift = weekend ? 1.25 : 1;
+          const seasonal = p.aisle === "garden" && warm ? 1.45 : p.aisle === "paint" && warm ? 1.22 : 1;
+          const sold = Math.min(p.onHand, Math.round((p.velocity * weekendLift * seasonal) + aisleTraffic / 95 + rand() * 3));
+          p.onHand -= sold;
+          p.shelfNow = Math.max(0, p.shelfNow - sold);
+          if ([8, 15, 22, 29].includes(d)) {
+            const constrained = ["M18-DRILL", "FLAPPER", "OAK-34"].includes(p.sku);
+            const inbound = Math.round(p.start * (constrained ? (.12 + rand() * .18) : (.42 + rand() * .55)));
+            p.onHand += inbound;
+            p.back += Math.round(inbound * .72);
+          }
+          let restocked = 0;
+          if (p.shelfNow < 10 && p.back > 0 && rand() > (weekend ? .36 : .18)) {
+            restocked = Math.min(p.back, Math.round(18 + rand() * 34));
+            p.shelfNow += restocked;
+            p.back -= restocked;
+          }
+          inventoryDays.push({ day: d, sku: p.sku, name: p.name, aisle: p.aisle, shelf: p.shelfNow, back: p.back, onHand: p.onHand, sold, restocked });
+        });
+
+        days.push({ day: d, dow, weekend, warm, trips: dayTrips });
+      }
+
+      return { days, trips, inventoryDays, searches, failed };
+    }
+
+    function pickHour(rand, weekend, pro) {
+      const profile = pro ? [6,7,8,9,10,11,12,13,14,15,16] : [9,10,11,12,13,14,15,16,17,18,19,20];
+      const weights = profile.map(h => pro ? (h < 10 ? 1.6 : h < 14 ? 1.15 : .65) : (weekend && h >= 10 && h <= 15 ? 1.8 : h >= 16 ? 1.2 : .8));
+      return weighted(rand, profile, weights);
+    }
+
+    function pickAisle(rand, pro, weekend, warm) {
+      const weights = aisles.map(a => {
+        let w = pro ? a.pro : a.diy;
+        if (weekend && ["garden", "paint", "flooring"].includes(a.id)) w *= 1.45;
+        if (warm && a.id === "garden") w *= 1.7;
+        if (a.id === "checkout") w *= .35;
+        return w;
+      });
+      return weighted(rand, aisles.map(a => a.id), weights);
+    }
+
+    function pickSearch(rand, aisle, weekend, warm) {
+      const choices = searchTerms.map(s => {
+        let w = s[2] * (s[1] === aisle ? 2.5 : .55);
+        if (warm && s[1] === "garden") w *= 1.6;
+        if (weekend && ["paint", "garden", "flooring"].includes(s[1])) w *= 1.25;
+        return w;
+      });
+      return weighted(rand, searchTerms, choices);
+    }
+
+    function weighted(rand, items, weights) {
+      const total = weights.reduce((a,b) => a + b, 0);
+      let r = rand() * total;
+      for (let i = 0; i < items.length; i++) {
+        r -= weights[i];
+        if (r <= 0) return items[i];
+      }
+      return items[items.length - 1];
+    }
+
+    function filteredTrips() {
+      return data.trips;
+    }
+
+    function summary() {
+      const trips = filteredTrips();
+      const searches = trips.length;
+      const success = trips.filter(t => t.success).length;
+      const conv = trips.filter(t => t.converted).length;
+      const avgDwell = trips.reduce((s,t) => s + t.dwell, 0) / trips.length;
+      const peak = Math.max(...hourCounts(trips).map(x => x.count));
+      const stockoutMin = estimateStockoutMinutes();
+      const avoided = Math.round(trips.length * .12);
+      return { trips, searches, success, conv, avgDwell, peak, stockoutMin, avoided };
+    }
+
+    function hourCounts(trips) {
+      const hours = Array.from({ length: 15 }, (_, i) => ({ hour: i + 6, count: 0 }));
+      trips.forEach(t => { const h = hours.find(x => x.hour === t.hour); if (h) h.count++; });
+      return hours;
+    }
+
+    function estimateStockoutMinutes() {
+      return data.inventoryDays.reduce((sum, r) => sum + (r.shelf <= 3 ? 160 : r.shelf <= 8 ? 45 : 0), 0);
+    }
+
+    function renderAll() {
+      const s = summary();
+      document.getElementById("fleet-pill").textContent = Math.min(150, Math.round(s.peak * .72)) + " carts active peak";
+      document.getElementById("data-note").textContent = "31 days - " + fmt(data.trips.length + data.inventoryDays.length) + " synthetic events";
+      renderMetrics("overview-metrics", [
+        ["Assisted trips", fmt(s.trips.length), "+14% vs prior month", "good"],
+        ["Search-to-shelf success", pct(s.success / s.searches * 100), "Shopper found target zone", "good"],
+        ["Avg dwell / trip", s.avgDwell.toFixed(1) + " min", "Highest in tools/flooring", "warn"],
+        ["Out-of-stock shelf time", fmt(s.stockoutMin), "Minutes this month", "bad"],
+        ["Congestion minutes avoided", fmt(s.avoided), "V2X route balancing", "good"]
+      ]);
+      renderMetrics("flow-metrics", [
+        ["Peak active carts", fmt(s.peak), "Sat 11am-2pm", "warn"],
+        ["Avg trip duration", (24 + s.avgDwell * .75).toFixed(0) + " min", "Porter assisted", "good"],
+        ["Conversion estimate", pct(s.conv / s.trips.length * 100), "Based on scans + route end", "good"],
+        ["Failed searches", fmt(Object.values(data.failed).reduce((a,b)=>a+b,0)), "Demand not captured", "bad"],
+        ["Estimated Pro missions", pct(s.trips.filter(t=>t.segment==="pro").length / s.trips.length * 100), "Route/search inferred", "warn"]
+      ]);
+      renderMetrics("inventory-metrics", [
+        ["SKUs tracked", "2,841", "Demo subset shown", "good"],
+        ["Low shelf alerts", "14", "Need action today", "bad"],
+        ["Avg restock SLA", "17 min", "Alert to shelf refill", "warn"],
+        ["Phantom flags", "6", "Shelf mismatch", "bad"],
+        ["Lost sales at risk", money(18400), "Month estimate", "bad"]
+      ]);
+      renderMetrics("action-metrics", [
+        ["AI actions", "38", "Generated this month", "good"],
+        ["Actioned", "24", "63% completion rate", "good"],
+        ["Est. impact", money(14200), "Actioned insights", "good"],
+        ["Stockouts avoided", "9", "Before shelf hit zero", "good"],
+        ["Labor hours saved", "42h", "Search + restock routing", "good"]
+      ]);
+
+      renderDailyChart();
+      renderQueueShort();
+      renderTopSearches();
+      renderRiskChart();
+      renderMixChart();
+      renderMap();
+      renderAisleList();
+      renderHourChart();
+      renderFailedSearches();
+      renderInventoryTable();
+      renderDepletionChart();
+      renderPhantomList();
+      renderSlaChart();
+      renderBackroomList();
+      renderActions();
+      bindTips();
+    }
+
+    function renderMetrics(id, items) {
+      document.getElementById(id).innerHTML = items.map(m => `
+        <div class="metric" data-tip="${esc(`<b>${m[0]}</b><br>${m[1]}<br>${m[2]}`)}">
+          <div class="label">${m[0]}</div>
+          <div class="value">${m[1]}</div>
+          <div class="delta ${m[3]}">${m[2]}</div>
+        </div>
+      `).join("");
+    }
+
+    function clearSvg(svg) { while (svg.firstChild) svg.removeChild(svg.firstChild); }
+    function node(tag, attrs, text) {
+      const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+      Object.entries(attrs || {}).forEach(([k,v]) => el.setAttribute(k, v));
+      if (text !== undefined) el.textContent = text;
+      return el;
+    }
+
+    function renderDailyChart() {
+      const trips = filteredTrips();
+      const byDay = data.days.map(d => ({ day: d.day, count: trips.filter(t => t.day === d.day).length, weekend: d.weekend }));
+      barLine("daily-chart", byDay.map(d => d.count), byDay.map(d => d.day), { suffix: "", color: brand.pink, highlight: byDay.map(d => d.weekend) });
+    }
+
+    function renderQueueShort() {
+      document.getElementById("queue-short").innerHTML = actions().slice(0,5).map(a => `
+        <div class="row" data-tip="${esc(`<b>${a.title}</b><br>${a.evidence}<br>Estimated impact: ${a.impact}`)}">
+          <span class="badge ${a.priClass}">${a.priority}</span>
+          <div class="row-main"><div class="row-name">${a.title}</div><div class="row-sub">${a.evidence}</div></div>
+          <div class="num">${a.impact}</div>
+        </div>
+      `).join("");
+    }
+
+    function renderTopSearches() {
+      const entries = Object.entries(data.searches).sort((a,b)=>b[1]-a[1]).slice(0,7);
+      const max = entries[0][1];
+      document.getElementById("top-searches").innerHTML = entries.map(([k,v]) => `
+        <div class="row" data-tip="${esc(`<b>${k}</b><br>${fmt(v)} Porter searches this month<br>${Math.round(v / Object.values(data.searches).reduce((a,b)=>a+b,0) * 100)}% of search intent`)}"><div class="row-main"><div class="row-name">${k}</div><div class="bar"><div class="fill" style="width:${v / max * 100}%"></div></div></div><div class="num">${fmt(v)}</div></div>
+      `).join("");
+    }
+
+    function renderRiskChart() {
+      const vals = products.slice(0,7).map(p => Math.round(p.unit * p.velocity * (p.shelf < 10 ? 7 : 3)));
+      barLine("risk-chart", vals, products.slice(0,7).map(p => p.name.split(" ")[0]), { prefix: "$", color: brand.red });
+    }
+
+    function renderMixChart() {
+      const trips = filteredTrips();
+      const pro = trips.filter(t => t.segment === "pro").length;
+      donut("mix-chart", [
+        { label: "Pro", value: pro, color: brand.pink },
+        { label: "DIY", value: trips.length - pro, color: brand.blue }
+      ]);
+    }
+
+    function renderMap() {
+      const svg = document.getElementById("store-map");
+      const tip = document.getElementById("tip");
+      clearSvg(svg);
+      const heatFill = (d, max = 14.2) => `rgba(255,61,104,${(Math.min(d / max, 1) * .76 + .14).toFixed(2)})`;
+      const textColor = d => d / 14.2 > .48 ? "#fff7fa" : "#ffd7e0";
+      const hoverAisle = (g, label, dwell) => {
+      g.style.cursor = "pointer";
+        g.addEventListener("mousemove", e => {
+          showTip(e, `${esc(label)}<br><b>${dwell} min</b> avg dwell`);
+        });
+        g.addEventListener("mouseleave", hideTip);
+      };
+
+      const spineX = 2, spineW = 82, storeX = 86, storeY = 130, storeW = 542, storeH = 408;
+      const leftX = storeX + 2, leftW = 200, elecW = 16;
+      const rightX = leftX + leftW + elecW + 4, rightW = storeW - leftW - elecW - 8;
+      const aH = 19, aGap = 2, leftStart = storeY + 4, rightStart = storeY + 4;
+
+      svg.appendChild(node("rect", { x: storeX, y: storeY, width: storeW, height: storeH, fill: "#120c12", stroke: brand.line, "stroke-width": 2, rx: 3 }));
+      svg.appendChild(node("rect", { x: storeX, y: 10, width: 220, height: 118, fill: "rgba(255,61,104,.12)", stroke: brand.line, "stroke-width": 2, rx: 3 }));
+      svg.appendChild(node("text", { x: storeX + 110, y: 62, "text-anchor": "middle", "font-size": 14, "font-weight": 700, fill: brand.pink }, "GARDEN CENTER"));
+      svg.appendChild(node("text", { x: storeX + 110, y: 80, "text-anchor": "middle", "font-size": 10, fill: brand.muted }, "5.0 min avg dwell"));
+
+      svg.appendChild(node("rect", { x: spineX, y: storeY, width: spineW, height: storeH, fill: "#191019", stroke: brand.line, "stroke-width": 1.5, rx: 2 }));
+      const spineItems = ["TOOL\nRENTAL", "PRO\nDESK", "SERVICE\nDESK", "ONLINE\nPICKUP", "CASHIERS", "ENTRY /\nEXIT"];
+      const sH = storeH / spineItems.length;
+      spineItems.forEach((label, i) => {
+        const sY = storeY + i * sH, cY = sY + sH / 2;
+        if (i > 0) svg.appendChild(node("line", { x1: spineX + 6, y1: sY, x2: spineX + spineW - 6, y2: sY, stroke: brand.line, "stroke-width": .8 }));
+        const isEntry = label.startsWith("ENTRY");
+        const lines = label.split("\n"), lH = 13, tH = (lines.length - 1) * lH;
+        lines.forEach((w, j) => svg.appendChild(node("text", { x: spineX + spineW / 2, y: cY - tH / 2 + j * lH + 4, "text-anchor": "middle", "font-size": 8.5, "font-weight": 600, fill: isEntry ? brand.pink : brand.muted }, w)));
+      });
+      svg.appendChild(node("polygon", { points: `${spineX + spineW / 2},${storeY + storeH - 8} ${spineX + spineW / 2 - 7},${storeY + storeH - 22} ${spineX + spineW / 2 + 7},${storeY + storeH - 22}`, fill: brand.pink }));
+
+      const leftAisles = [
+        { n: 1, label: "FLOORING", dwell: 12.2 }, { n: 2, label: "FLOORING", dwell: 12.0 },
+        { n: 3, label: "FLOORING", dwell: 11.8 }, { n: 4, label: "FLOORING", dwell: 11.5 },
+        { n: 5, label: "PAINT", dwell: 10.5 }, { n: 6, label: "PAINT", dwell: 10.2 }, { n: 7, label: "PAINT", dwell: 9.8 },
+        { n: 8, label: "TOOLS & HARDWARE", dwell: 14.2 }, { n: 9, label: "TOOLS & HARDWARE", dwell: 13.8 },
+        { n: 10, label: "TOOLS & HARDWARE", dwell: 13.5 }, { n: 11, label: "TOOLS & HARDWARE", dwell: 13.1 },
+        { n: 12, label: "LUMBER & BUILDING", dwell: 6.3 }, { n: 13, label: "LUMBER & BUILDING", dwell: 6.1 },
+        { n: 14, label: "LUMBER & BUILDING", dwell: 5.9 }, { n: 15, label: "LUMBER & BUILDING", dwell: 5.7 },
+        { n: 16, label: "LUMBER & BUILDING", dwell: 5.5 }
+      ];
+      leftAisles.forEach((a, i) => {
+        const x = leftX, y = leftStart + i * (aH + aGap), w = leftW, g = node("g", {});
+        g.appendChild(node("rect", { x, y, width: w, height: aH, fill: heatFill(a.dwell), rx: 2, stroke: "rgba(255,255,255,.16)", "stroke-width": .5 }));
+        g.appendChild(node("text", { x: x + 8, y: y + 13, "font-size": 8, "font-weight": 700, fill: textColor(a.dwell) }, a.n));
+        g.appendChild(node("text", { x: x + 22, y: y + 13, "font-size": 8.5, "font-weight": 500, fill: textColor(a.dwell) }, a.label));
+        g.appendChild(node("text", { x: x + w - 4, y: y + 13, "text-anchor": "end", "font-size": 8, fill: textColor(a.dwell) }, a.dwell + " min"));
+        hoverAisle(g, `Aisle ${a.n} - ${a.label}`, a.dwell);
+        svg.appendChild(g);
+      });
+
+      const elecX = leftX + leftW + 2, elecH = leftAisles.length * (aH + aGap) - aGap, elecMidY = leftStart + elecH / 2;
+      svg.appendChild(node("rect", { x: elecX, y: leftStart, width: elecW, height: elecH, fill: heatFill(7.2), stroke: "rgba(255,255,255,.16)", "stroke-width": .5, rx: 2 }));
+      svg.appendChild(node("text", { x: elecX + elecW / 2, y: elecMidY, "text-anchor": "middle", "font-size": 7.5, "font-weight": 600, fill: textColor(7.2), transform: `rotate(-90,${elecX + elecW / 2},${elecMidY})` }, "ELECTRICAL  7.2 min"));
+
+      const rightAisles = [
+        { n: 17, label: "DOORS & WINDOWS", dwell: 4.8 }, { n: 18, label: "DOORS & WINDOWS", dwell: 4.6 },
+        { n: 19, label: "DOORS & WINDOWS", dwell: 4.4 }, { n: 20, label: "PLUMBING / K&B", dwell: 4.1 },
+        { n: 21, label: "PLUMBING / K&B", dwell: 4.3 }, { n: 22, label: "PLUMBING / K&B", dwell: 4.5 },
+        { n: 23, label: "PLUMBING / K&B", dwell: 4.7 }, { n: 24, label: "PLUMBING / K&B", dwell: 4.9 },
+        { n: 25, label: "LIGHTING & FANS", dwell: 3.9 }, { n: 26, label: "LIGHTING & FANS", dwell: 4.0 },
+        { n: 27, label: "LIGHTING & FANS", dwell: 4.2 }
+      ];
+      rightAisles.forEach((a, i) => {
+        const x = rightX, y = rightStart + i * (aH + aGap), w = rightW, g = node("g", {});
+        g.appendChild(node("rect", { x, y, width: w, height: aH, fill: heatFill(a.dwell), rx: 2, stroke: "rgba(255,255,255,.16)", "stroke-width": .5 }));
+        g.appendChild(node("text", { x: x + 8, y: y + 13, "font-size": 8, "font-weight": 700, fill: textColor(a.dwell) }, a.n));
+        g.appendChild(node("text", { x: x + 22, y: y + 13, "font-size": 8.5, "font-weight": 500, fill: textColor(a.dwell) }, a.label));
+        g.appendChild(node("text", { x: x + w - 4, y: y + 13, "text-anchor": "end", "font-size": 8, fill: textColor(a.dwell) }, a.dwell + " min"));
+        hoverAisle(g, `Aisle ${a.n} - ${a.label}`, a.dwell);
+        svg.appendChild(g);
+      });
+
+      const blocksY = rightStart + rightAisles.length * (aH + aGap) + 6, blockH = storeY + storeH - blocksY - 6, blockW2 = rightW / 2 - 3;
+      const appG = node("g", {});
+      appG.appendChild(node("rect", { x: rightX, y: blocksY, width: blockW2, height: blockH, fill: heatFill(3.1), rx: 3, stroke: "rgba(255,255,255,.16)", "stroke-width": 1 }));
+      appG.appendChild(node("text", { x: rightX + blockW2 / 2, y: blocksY + blockH / 2 - 6, "text-anchor": "middle", "font-size": 10, "font-weight": 700, fill: textColor(3.1) }, "APPLIANCES"));
+      appG.appendChild(node("text", { x: rightX + blockW2 / 2, y: blocksY + blockH / 2 + 8, "text-anchor": "middle", "font-size": 9, fill: textColor(3.1) }, "3.1 min"));
+      hoverAisle(appG, "Appliances", 3.1);
+      svg.appendChild(appG);
+
+      const ksX = rightX + blockW2 + 6, ksG = node("g", {});
+      ksG.appendChild(node("rect", { x: ksX, y: blocksY, width: blockW2, height: blockH, fill: heatFill(8.8), rx: 3, stroke: "rgba(255,255,255,.16)", "stroke-width": 1 }));
+      ksG.appendChild(node("text", { x: ksX + blockW2 / 2, y: blocksY + blockH / 2 - 12, "text-anchor": "middle", "font-size": 10, "font-weight": 700, fill: textColor(8.8) }, "KITCHEN"));
+      ksG.appendChild(node("text", { x: ksX + blockW2 / 2, y: blocksY + blockH / 2 + 2, "text-anchor": "middle", "font-size": 10, "font-weight": 700, fill: textColor(8.8) }, "SHOWROOM"));
+      ksG.appendChild(node("text", { x: ksX + blockW2 / 2, y: blocksY + blockH / 2 + 16, "text-anchor": "middle", "font-size": 9, fill: textColor(8.8) }, "8.8 min"));
+      hoverAisle(ksG, "Kitchen Showroom", 8.8);
+      svg.appendChild(ksG);
+
+      svg.appendChild(node("rect", { x: storeX, y: storeY, width: storeW, height: storeH, fill: "none", stroke: brand.line, "stroke-width": 2, rx: 3 }));
+      svg.appendChild(node("line", { x1: rightX - 2, y1: storeY + 2, x2: rightX - 2, y2: storeY + storeH - 2, stroke: brand.line, "stroke-width": 1, "stroke-dasharray": "4,3" }));
+    }
+
+    function dwellFor(id, trips) {
+      const rows = trips.filter(t => t.aisle === id);
+      return rows.length ? rows.reduce((s,t)=>s+t.dwell,0) / rows.length : aisles.find(a=>a.id===id).base;
+    }
+
+    function convFor(id, trips) {
+      const rows = trips.filter(t => t.aisle === id);
+      return rows.length ? rows.filter(t => t.converted).length / rows.length * 100 : aisles.find(a=>a.id===id).conv;
+    }
+
+    function renderAisleList() {
+      const trips = filteredTrips();
+      const rows = aisles.filter(a => a.id !== "checkout").map(a => ({
+        name: a.name, dwell: dwellFor(a.id, trips), conv: convFor(a.id, trips), visits: trips.filter(t=>t.aisle===a.id).length
+      })).sort((a,b)=>b.dwell-a.dwell);
+      const max = rows[0].dwell;
+      document.getElementById("aisle-list").innerHTML = rows.map(r => `
+        <div class="row" data-tip="${esc(`<b>${r.name}</b><br>${fmt(r.visits)} assisted visits<br>${r.dwell.toFixed(1)} min avg dwell<br>${Math.round(r.conv)}% estimated conversion`) }">
+          <div class="row-main">
+            <div class="row-name">${r.name}</div>
+            <div class="row-sub">${fmt(r.visits)} visits - ${Math.round(r.conv)}% conversion</div>
+            <div class="bar"><div class="fill" style="width:${r.dwell / max * 100}%"></div></div>
+          </div>
+          <div class="num">${r.dwell.toFixed(1)}m</div>
+        </div>
+      `).join("");
+    }
+
+    function renderHourChart() {
+      const rows = hourCounts(filteredTrips());
+      barLine("hour-chart", rows.map(r => r.count), rows.map(r => r.hour > 12 ? (r.hour - 12) + "p" : r.hour + "a"), { color: brand.pink2 });
+    }
+
+    function renderFailedSearches() {
+      const rows = Object.entries(data.failed).sort((a,b)=>b[1]-a[1]).slice(0,6);
+      const max = rows[0][1];
+      document.getElementById("failed-searches").innerHTML = rows.map(([k,v]) => `
+        <div class="row" data-tip="${esc(`<b>${k}</b><br>${fmt(v)} failed searches<br>Likely no stock, unclear location, or shopper abandoned route`)}"><div class="row-main"><div class="row-name">${k}</div><div class="row-sub">Likely no stock, unclear location, or shopper abandoned route</div><div class="bar"><div class="fill" style="width:${v/max*100}%;background:${brand.red}"></div></div></div><div class="num">${fmt(v)}</div></div>
+      `).join("");
+    }
+
+    function latestInventory() {
+      return products.map(p => {
+        const rows = data.inventoryDays.filter(r => r.sku === p.sku);
+        return { ...p, ...rows[rows.length - 1] };
+      });
+    }
+
+    function renderInventoryTable() {
+      const rows = latestInventory().sort((a,b)=>a.shelf-b.shelf);
+      document.getElementById("inventory-table").innerHTML = `
+        <tr><th>SKU</th><th>Aisle</th><th>Shelf</th><th>Backroom</th><th>Status</th></tr>
+        ${rows.map(r => {
+          const status = r.shelf <= 5 ? ["Critical", "red"] : r.shelf <= 15 ? ["Low", "amber"] : ["Healthy", "green"];
+          const tip = esc(`<b>${r.name}</b><br>SKU: ${r.sku}<br>Shelf: ${r.shelf} units<br>Backroom: ${r.back} units<br>Status: ${status[0]}`);
+          return `<tr data-tip="${tip}"><td>${r.name}<br><span style="color:var(--faint)">${r.sku}</span></td><td>${aisles.find(a=>a.id===r.aisle).name}</td><td>${r.shelf}</td><td>${r.back}</td><td class="status ${status[1]}">${status[0]}</td></tr>`;
+        }).join("")}
+      `;
+    }
+
+    function renderDepletionChart() {
+      const selected = ["M18-DRILL", "BEHR-GAL", "MULCH-BLK", "FLAPPER"];
+      multiLine("depletion-chart", selected.map((sku, i) => {
+        const p = products.find(x=>x.sku===sku);
+        const rows = data.inventoryDays.filter(r=>r.sku===sku && [1,8,15,22,31].includes(r.day));
+        return { label: p.name.split(" ").slice(0,2).join(" "), values: rows.map(r=>r.shelf), color: [brand.red, brand.pink, brand.green, brand.amber][i] };
+      }), ["W1","W2","W3","W4","Now"]);
+    }
+
+    function renderPhantomList() {
+      const rows = [
+        ["Universal Toilet Flapper", "System 22 / shelf 4", "Repeat searches in plumbing"],
+        ["Milwaukee M18 Drill Kit", "System 11 / shelf 6", "High theft/misplace risk"],
+        ["3/4 in. Oak Hardwood", "System 18 / shelf 8", "Shelf scan below planogram"]
+      ];
+      document.getElementById("phantom-list").innerHTML = rows.map(r => `<div class="row" data-tip="${esc(`<b>${r[0]}</b><br>${r[1]}<br>${r[2]}`)}"><div class="row-main"><div class="row-name">${r[0]}</div><div class="row-sub">${r[1]} - ${r[2]}</div></div><span class="badge priority-med">Review</span></div>`).join("");
+    }
+
+    function renderSlaChart() {
+      barLine("sla-chart", [13,15,19,28,21,17,12], ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"], { suffix: "m", color: brand.amber });
+    }
+
+    function renderBackroomList() {
+      const rows = latestInventory().filter(r => r.shelf < 20 && r.back > 15).slice(0,4);
+      document.getElementById("backroom-list").innerHTML = rows.map(r => `<div class="row" data-tip="${esc(`<b>${r.name}</b><br>${r.shelf} units on shelf<br>${r.back} units available in backroom<br>Recommended action: restock before next peak window`)}"><div class="row-main"><div class="row-name">${r.name}</div><div class="row-sub">${r.shelf} on shelf, ${r.back} in backroom</div></div><span class="badge priority-high">Restock</span></div>`).join("");
+    }
+
+    function actions() {
+      return [
+        { priority: "High", priClass: "priority-high", title: "Restock toilet repair parts before 4pm", evidence: "312 searches, 41% failed, shelf scan shows 4 units", impact: "$2.1K" },
+        { priority: "High", priClass: "priority-high", title: "Forward-stage mulch pallets near Garden entrance", evidence: "Weekend garden demand +54%; Porter routes cluster at entrance", impact: "$3.8K" },
+        { priority: "High", priClass: "priority-high", title: "Add Saturday coverage in Paint 10am-2pm", evidence: "10.7 min dwell, 71% conversion, high attach-rate opportunity", impact: "$2.9K" },
+        { priority: "Medium", priClass: "priority-med", title: "Investigate Flooring conversion gap", evidence: "12.2 min dwell but only 28% conversion across 1,146 visits", impact: "$4.4K" },
+        { priority: "Medium", priClass: "priority-med", title: "Move M18 drill kits to locked high-visibility bay", evidence: "Shelf mismatch repeated 3 weekends, high search intent", impact: "$1.6K" },
+        { priority: "Low", priClass: "priority-low", title: "Route Pro customers through west lumber lane", evidence: "V2X simulation reduces crossing conflicts by 18%", impact: "42h" }
+      ];
+    }
+
+    function renderActions() {
+      document.getElementById("actions-list").innerHTML = actions().map((a, i) => `
+        <div class="insight" data-tip="${esc(`<b>${a.title}</b><br>${a.evidence}<br>Confidence ${[88,84,81,76,73,69][i]}%<br>Estimated impact ${a.impact}`)}">
+          <span class="badge ${a.priClass}">${a.priority} priority</span>
+          <strong>${a.title}</strong>
+          <p>${a.evidence}.</p>
+          <div class="mini">
+            <span class="badge">Confidence ${[88,84,81,76,73,69][i]}%</span>
+            <span class="badge">Estimated impact ${a.impact}</span>
+            <span class="badge">Owner: ${i < 3 ? "Store ops" : "Merchandising"}</span>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function barLine(id, values, labels, opts) {
+      const svg = document.getElementById(id);
+      clearSvg(svg);
+      const w = svg.clientWidth || 600, h = svg.clientHeight || 220, pad = 32;
+      svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+      const max = Math.max(...values) * 1.12;
+      const bw = (w - pad * 2) / values.length * .62;
+      values.forEach((v, i) => {
+        const x = pad + i * ((w - pad * 2) / values.length) + bw * .3;
+        const bh = (h - pad * 2) * (v / max);
+        const y = h - pad - bh;
+        const bar = node("rect", { x, y, width: bw, height: bh, rx: 4, fill: opts.highlight && opts.highlight[i] ? brand.pink2 : opts.color || brand.pink, opacity: opts.highlight && opts.highlight[i] ? 1 : .82, "data-tip": `${labels[i]}<br><b>${opts.prefix || ""}${fmt(v)}${opts.suffix || ""}</b>` });
+        bar.addEventListener("mousemove", e => showTip(e, bar.getAttribute("data-tip")));
+        bar.addEventListener("mouseleave", hideTip);
+        svg.appendChild(bar);
+        if (i % Math.ceil(values.length / 8) === 0) svg.appendChild(node("text", { x: x + bw/2, y: h - 10, fill: brand.muted, "font-size": 10, "text-anchor": "middle" }, labels[i]));
+      });
+      svg.appendChild(node("line", { x1: pad, y1: h - pad, x2: w - pad, y2: h - pad, stroke: brand.line }));
+      svg.appendChild(node("text", { x: pad, y: 14, fill: brand.muted, "font-size": 10 }, `${opts.prefix || ""}${fmt(max / 1.12)}${opts.suffix || ""} max`));
+    }
+
+    function donut(id, items) {
+      const svg = document.getElementById(id);
+      clearSvg(svg);
+      const w = svg.clientWidth || 360, h = svg.clientHeight || 170, cx = w/2, cy = h/2, r = 56, total = items.reduce((s,i)=>s+i.value,0);
+      svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+      let start = -Math.PI/2;
+      items.forEach(item => {
+        const angle = item.value / total * Math.PI * 2;
+        const end = start + angle;
+        const large = angle > Math.PI ? 1 : 0;
+        const x1 = cx + r * Math.cos(start), y1 = cy + r * Math.sin(start);
+        const x2 = cx + r * Math.cos(end), y2 = cy + r * Math.sin(end);
+        const arc = node("path", { d: `M ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2}`, fill: "none", stroke: item.color, "stroke-width": 22, "stroke-linecap": "round", "data-tip": `${item.label}<br><b>${fmt(item.value)}</b> missions<br>${pct(item.value / total * 100)} of estimated mix` });
+        arc.addEventListener("mousemove", e => showTip(e, arc.getAttribute("data-tip")));
+        arc.addEventListener("mouseleave", hideTip);
+        svg.appendChild(arc);
+        start = end;
+      });
+      svg.appendChild(node("text", { x: cx, y: cy - 2, fill: brand.text, "font-size": 24, "font-weight": 700, "text-anchor": "middle" }, pct(items[0].value/total*100)));
+      svg.appendChild(node("text", { x: cx, y: cy + 18, fill: brand.muted, "font-size": 11, "text-anchor": "middle" }, "Pro-like"));
+      items.forEach((item, i) => {
+        svg.appendChild(node("rect", { x: 18, y: 28 + i * 22, width: 9, height: 9, rx: 2, fill: item.color, "data-tip": `${item.label}: ${fmt(item.value)} missions` }));
+        svg.appendChild(node("text", { x: 34, y: 37 + i * 22, fill: brand.muted, "font-size": 11 }, `${item.label}: ${fmt(item.value)}`));
+      });
+    }
+
+    function multiLine(id, series, labels) {
+      const svg = document.getElementById(id);
+      clearSvg(svg);
+      const w = svg.clientWidth || 600, h = svg.clientHeight || 240, pad = 36;
+      svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+      const max = Math.max(...series.flatMap(s => s.values)) * 1.15;
+      series.forEach(s => {
+        const pts = s.values.map((v,i) => {
+          const x = pad + i * ((w - pad * 2) / (labels.length - 1));
+          const y = h - pad - (h - pad * 2) * v / max;
+          return [x,y];
+        });
+        const path = node("path", { d: pts.map((p,i)=>(i?"L":"M") + p[0] + " " + p[1]).join(" "), fill: "none", stroke: s.color, "stroke-width": 3, "data-tip": `<b>${s.label}</b><br>Weekly shelf inventory trend` });
+        path.addEventListener("mousemove", e => showTip(e, path.getAttribute("data-tip")));
+        path.addEventListener("mouseleave", hideTip);
+        svg.appendChild(path);
+        pts.forEach((p, i) => {
+          const c = node("circle", { cx: p[0], cy: p[1], r: 4, fill: s.color, "data-tip": `${s.label}<br>${labels[i]}: <b>${fmt(s.values[i])}</b> units on shelf` });
+          c.addEventListener("mousemove", e => showTip(e, c.getAttribute("data-tip")));
+          c.addEventListener("mouseleave", hideTip);
+          svg.appendChild(c);
+        });
+      });
+      labels.forEach((l,i) => svg.appendChild(node("text", { x: pad + i * ((w - pad * 2) / (labels.length - 1)), y: h - 10, fill: brand.muted, "font-size": 10, "text-anchor": "middle" }, l)));
+      series.forEach((s,i) => {
+        svg.appendChild(node("rect", { x: pad + i * 118, y: 12, width: 9, height: 9, rx: 2, fill: s.color }));
+        svg.appendChild(node("text", { x: pad + 14 + i * 118, y: 21, fill: brand.muted, "font-size": 10 }, s.label));
+      });
+    }
+
+    document.querySelectorAll(".nav button").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".nav button").forEach(b => b.classList.remove("active"));
+        document.querySelectorAll(".tabs").forEach(t => t.classList.remove("active"));
+        btn.classList.add("active");
+        document.getElementById(btn.dataset.tab).classList.add("active");
+        setTimeout(renderAll, 20);
+      });
+    });
+    window.addEventListener("resize", () => setTimeout(renderAll, 80));
+    renderAll();
+  </script>
+</body>
+</html>

@@ -1,0 +1,591 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Offload Synthetic Retail Simulation</title>
+  <style>
+    :root {
+      --bg: #090509;
+      --panel: #120c12;
+      --panel-2: #1a1019;
+      --line: #322433;
+      --text: #f7f1f5;
+      --muted: #a99aa6;
+      --faint: #756875;
+      --pink: #ff3d68;
+      --pink-2: #ff6b8e;
+      --green: #22c58b;
+      --amber: #ffb84d;
+      --red: #ff5668;
+      --blue: #6aa8ff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(circle at 84% 8%, rgba(255,61,104,.16), transparent 32%), var(--bg);
+      color: var(--text);
+      font-family: Inter, Arial, sans-serif;
+      overflow: hidden;
+    }
+    .wrap {
+      height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr 310px;
+      gap: 12px;
+      padding: 14px;
+    }
+    .stage, .side {
+      background: linear-gradient(180deg, rgba(26,16,25,.94), rgba(12,7,12,.96));
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 18px 60px rgba(0,0,0,.35);
+      min-width: 0;
+    }
+    .stage { position: relative; overflow: hidden; }
+    canvas { display: block; width: 100%; height: 100%; }
+    .hud {
+      position: absolute;
+      left: 16px;
+      top: 14px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      pointer-events: none;
+    }
+    .pill {
+      border: 1px solid var(--line);
+      background: rgba(18,12,18,.82);
+      border-radius: 999px;
+      color: var(--muted);
+      padding: 7px 10px;
+      font-size: 12px;
+    }
+    .pill.live:before {
+      content: "";
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--pink);
+      margin-right: 6px;
+      box-shadow: 0 0 0 5px rgba(255,61,104,.12);
+    }
+    .brand {
+      position: absolute;
+      right: 16px;
+      bottom: 14px;
+      color: var(--muted);
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      pointer-events: none;
+    }
+    .mark {
+      width: 26px;
+      height: 26px;
+      border-radius: 7px;
+      border: 1px solid #fff2;
+      position: relative;
+      background: #0e090e;
+    }
+    .mark:before {
+      content: "";
+      position: absolute;
+      left: 7px;
+      top: 7px;
+      width: 10px;
+      height: 10px;
+      border-left: 3px solid #fff;
+      border-bottom: 3px solid #fff;
+    }
+    .mark:after {
+      content: "";
+      position: absolute;
+      right: 5px;
+      bottom: 7px;
+      width: 10px;
+      height: 3px;
+      background: var(--pink);
+      border-radius: 8px;
+    }
+    .side { padding: 14px; overflow: hidden; }
+    h1 { margin: 0; font-size: 18px; letter-spacing: -.02em; }
+    .sub { color: var(--muted); font-size: 12px; line-height: 1.45; margin: 6px 0 14px; }
+    .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+    .metric {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 8px;
+      padding: 10px;
+      min-height: 74px;
+    }
+    .label { color: var(--muted); font-size: 11px; margin-bottom: 7px; }
+    .value { font-size: 22px; font-weight: 800; letter-spacing: -.04em; }
+    .caption { color: var(--faint); font-size: 10px; margin-top: 5px; }
+    .card {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 8px;
+      padding: 11px;
+      margin-bottom: 10px;
+    }
+    .legend-card {
+      display: grid;
+      gap: 7px;
+      margin-bottom: 12px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .legend-line { display: flex; align-items: center; gap: 8px; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+    .card-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 9px;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      padding: 7px 0;
+      border-bottom: 1px solid var(--line);
+      font-size: 12px;
+    }
+    .row:last-child { border-bottom: 0; }
+    .row small { color: var(--faint); display: block; margin-top: 3px; }
+    .tag {
+      width: max-content;
+      border-radius: 999px;
+      padding: 3px 7px;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 10px;
+      align-self: center;
+    }
+    .tag.red { color: #ffd0d6; background: rgba(255,86,104,.13); border-color: rgba(255,86,104,.35); }
+    .tag.green { color: #b9f5df; background: rgba(34,197,139,.12); border-color: rgba(34,197,139,.32); }
+    .bar {
+      height: 7px;
+      background: #2b202b;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 6px;
+    }
+    .fill { height: 100%; background: var(--pink); border-radius: 999px; }
+    button {
+      width: 100%;
+      border: 1px solid rgba(255,61,104,.55);
+      background: rgba(255,61,104,.14);
+      color: var(--text);
+      border-radius: 7px;
+      padding: 10px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    button:hover { background: rgba(255,61,104,.2); }
+    .link-button {
+      display: block;
+      width: 100%;
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      color: var(--text);
+      border-radius: 7px;
+      padding: 10px;
+      text-align: center;
+      text-decoration: none;
+      font-weight: 700;
+      margin-top: 8px;
+    }
+    .link-button:hover { border-color: rgba(255,61,104,.55); }
+    #recordStatus { color: var(--muted); font-size: 11px; margin-top: 8px; line-height: 1.4; }
+    @media (max-width: 980px) {
+      body { overflow: auto; }
+      .wrap { grid-template-columns: 1fr; height: auto; }
+      .stage { height: 620px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="stage">
+      <canvas id="sim"></canvas>
+      <div class="hud">
+        <div class="pill live" id="clock">Saturday 10:00 AM</div>
+        <div class="pill" id="mode">Weekend DIY traffic</div>
+        <div class="pill" id="events">0 synthetic events</div>
+      </div>
+      <div class="brand"><div class="mark"></div><strong>offload</strong> synthetic telemetry simulation</div>
+    </section>
+
+    <aside class="side">
+      <h1>Data Generation Run</h1>
+      <div class="sub">A top-down simulation creates shopper trips, Porter routes, aisle dwell, search intent, congestion, and shelf depletion signals.</div>
+      <div class="legend-card">
+        <div class="legend-line"><span class="legend-dot" style="background:var(--pink)"></span>Active Porter carts</div>
+        <div class="legend-line"><span class="legend-dot" style="background:var(--blue)"></span>Generated route telemetry</div>
+      </div>
+
+      <div class="metric-grid">
+        <div class="metric"><div class="label">Trips generated</div><div class="value" id="trips">0</div><div class="caption">route start events</div></div>
+        <div class="metric"><div class="label">Searches</div><div class="value" id="searches">0</div><div class="caption">product requests</div></div>
+        <div class="metric"><div class="label">Dwell samples</div><div class="value" id="dwell">0</div><div class="caption">aisle-time observations</div></div>
+        <div class="metric"><div class="label">Shelf alerts</div><div class="value" id="alerts">0</div><div class="caption">inventory events</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Live Search Intent <span id="intentTotal">0</span></div>
+        <div id="intentRows"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Shelf Depletion</div>
+        <div id="shelfRows"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Event Stream</div>
+        <div id="stream"></div>
+      </div>
+
+      <button id="recordBtn">Record 45s WebM</button>
+      <a class="link-button" href="index.html">Open Dashboard</a>
+      <div id="recordStatus">Use this button in Chrome/Edge to export the simulation clip.</div>
+    </aside>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("sim");
+    const ctx = canvas.getContext("2d");
+    const DPR = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+    const C = {
+      bg: "#090509", panel: "#120c12", panel2: "#1a1019", line: "#322433",
+      text: "#f7f1f5", muted: "#a99aa6", faint: "#756875",
+      pink: "#ff3d68", pink2: "#ff6b8e", green: "#22c58b",
+      amber: "#ffb84d", red: "#ff5668", blue: "#6aa8ff"
+    };
+
+    const zones = [
+      { id: "entry", label: "ENTRY / EXIT", x: 2, y: 468, w: 82, h: 70, dwell: 2, kind: "spine" },
+      { id: "checkout", label: "CASHIERS", x: 2, y: 400, w: 82, h: 68, dwell: 4, kind: "spine" },
+      { id: "service", label: "SERVICE DESK", x: 2, y: 264, w: 82, h: 68, dwell: 3, kind: "spine" },
+      { id: "garden", label: "GARDEN CENTER", x: 86, y: 10, w: 220, h: 118, dwell: 5, kind: "garden" },
+      { id: "flooring", label: "FLOORING", x: 88, y: 134, w: 200, h: 82, dwell: 12 },
+      { id: "paint", label: "PAINT", x: 88, y: 218, w: 200, h: 62, dwell: 10 },
+      { id: "tools", label: "TOOLS & HARDWARE", x: 88, y: 282, w: 200, h: 82, dwell: 14 },
+      { id: "lumber", label: "LUMBER & BUILDING", x: 88, y: 366, w: 200, h: 104, dwell: 6 },
+      { id: "electrical", label: "ELECTRICAL", x: 290, y: 134, w: 16, h: 336, dwell: 8, kind: "strip" },
+      { id: "doors", label: "DOORS & WINDOWS", x: 310, y: 134, w: 318, h: 62, dwell: 5 },
+      { id: "plumbing", label: "PLUMBING / K&B", x: 310, y: 198, w: 318, h: 104, dwell: 5 },
+      { id: "lighting", label: "LIGHTING & FANS", x: 310, y: 304, w: 318, h: 62, dwell: 4 },
+      { id: "appliances", label: "APPLIANCES", x: 310, y: 372, w: 156, h: 160, dwell: 3 },
+      { id: "kitchen", label: "KITCHEN SHOWROOM", x: 472, y: 372, w: 156, h: 160, dwell: 9 }
+    ];
+    const products = [
+      { name: "M18 Drill", zone: "tools", qty: 34, max: 34, velocity: 0.21 },
+      { name: "Behr Paint", zone: "paint", qty: 86, max: 86, velocity: 0.34 },
+      { name: "Mulch", zone: "garden", qty: 130, max: 130, velocity: 0.55 },
+      { name: "Toilet Flapper", zone: "plumbing", qty: 44, max: 44, velocity: 0.18 },
+      { name: "Outlet 15A", zone: "electrical", qty: 98, max: 98, velocity: 0.16 }
+    ];
+    const searchTerms = [
+      ["mulch", "garden"], ["paint", "paint"], ["drill bits", "tools"],
+      ["toilet repair", "plumbing"], ["2x4", "lumber"], ["outlet", "electrical"],
+      ["flooring calculator", "flooring"], ["ceiling fan", "lighting"], ["miter saw", "tools"], ["dishwasher", "appliances"]
+    ];
+
+    let t0 = performance.now();
+    let agents = [];
+    let trails = [];
+    let events = [];
+    let heat = {};
+    let counters = { trips: 0, searches: 0, dwell: 0, alerts: 0, eventCount: 0 };
+    let searchCounts = {};
+    let spawnBank = 0;
+    let lastUi = 0;
+    let lastRestock = 0;
+    let W = 0, H = 0, scale = 1, ox = 0, oy = 0;
+
+    function rand(seed) {
+      let s = seed >>> 0;
+      return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
+    }
+    const random = rand(1842);
+
+    function resize() {
+      const r = canvas.getBoundingClientRect();
+      canvas.width = Math.round(r.width * DPR);
+      canvas.height = Math.round(r.height * DPR);
+      W = canvas.width / DPR;
+      H = canvas.height / DPR;
+      scale = Math.min((W - 60) / 650, (H - 80) / 560);
+      ox = (W - 650 * scale) / 2;
+      oy = (H - 560 * scale) / 2 + 12;
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    }
+    window.addEventListener("resize", resize);
+    resize();
+
+    function z(id) { return zones.find(v => v.id === id); }
+    function center(zone) { return { x: zone.x + zone.w / 2, y: zone.y + zone.h / 2 }; }
+    function routeFor(target) {
+      const e = center(z("entry"));
+      const c = center(z("checkout"));
+      const a = center(z(target));
+      const cross = { x: a.x < 300 ? 190 : 470, y: 485 };
+      const aisle = { x: a.x, y: Math.max(150, Math.min(485, a.y)) };
+      return [e, { x: 43, y: 485 }, cross, aisle, a, { ...a, dwell: z(target).dwell * (0.65 + random() * 0.75) }, aisle, c, e];
+    }
+    function pickTarget(hour) {
+      const weekend = true;
+      const weights = zones.filter(v => !["entry","service","checkout","doors","appliances"].includes(v.id)).map(v => {
+        let w = 1;
+        if (weekend && ["garden", "paint", "flooring"].includes(v.id)) w *= 1.8;
+        if (hour < 10 && ["lumber", "tools", "electrical"].includes(v.id)) w *= 1.4;
+        if (v.id === "tools") w *= 1.35;
+        return w;
+      });
+      const opts = zones.filter(v => !["entry","service","checkout","doors","appliances"].includes(v.id));
+      let total = weights.reduce((a,b) => a + b, 0), r = random() * total;
+      for (let i = 0; i < opts.length; i++) { r -= weights[i]; if (r <= 0) return opts[i].id; }
+      return "paint";
+    }
+    function addEvent(text, type = "green") {
+      events.unshift({ text, type, age: 0 });
+      events = events.slice(0, 5);
+      counters.eventCount++;
+    }
+    function spawnAgent(simMin) {
+      const hour = 8 + (simMin / 60) % 12;
+      const target = pickTarget(hour);
+      const term = searchTerms.filter(s => s[1] === target)[0] || searchTerms[Math.floor(random() * searchTerms.length)];
+      const route = routeFor(target);
+      agents.push({
+        id: Math.random().toString(36).slice(2),
+        route, target, term: term[0],
+        i: 0, p: 0, speed: 0.42 + random() * .25,
+        color: C.pink,
+        pause: 0
+      });
+      searchCounts[term[0]] = (searchCounts[term[0]] || 0) + 1;
+      counters.trips++;
+      counters.searches++;
+      addEvent(`search: ${term[0]} -> ${z(target).label}`, "green");
+    }
+    function update(dt, simMin) {
+      const hour = 8 + (simMin / 60) % 12;
+      const peak = hour >= 10 && hour <= 15 ? 1.55 : .9;
+      spawnBank += dt * peak * 0.52;
+      while (spawnBank > 1 && agents.length < 42) {
+        spawnAgent(simMin);
+        spawnBank -= 1;
+      }
+      if (simMin - lastRestock > 170) {
+        const p = products[Math.floor(random() * products.length)];
+        p.qty = Math.min(p.max, p.qty + Math.round(p.max * (.18 + random() * .2)));
+        addEvent(`restock: ${p.name}`, "green");
+        lastRestock = simMin;
+      }
+      agents = agents.filter(a => {
+        events.forEach(e => e.age += dt);
+        const from = a.route[a.i], to = a.route[a.i + 1];
+        if (!to) return false;
+        if (a.pause > 0) {
+          a.pause -= dt * 4.2;
+          counters.dwell += dt * 0.45;
+          heat[a.target] = (heat[a.target] || 0) + dt * .7;
+          return true;
+        }
+        a.p += dt * a.speed * .34;
+        if (a.p >= 1) {
+          a.i++;
+          a.p = 0;
+          const now = a.route[a.i];
+          if (now && now.dwell) {
+            a.pause = now.dwell;
+            const prod = products.find(p => p.zone === a.target);
+            if (prod && random() < .72) {
+              const sold = Math.min(prod.qty, Math.max(1, Math.round(prod.velocity * 6 + random() * 3)));
+              prod.qty -= sold;
+              if (prod.qty / prod.max < .18) {
+                counters.alerts++;
+                addEvent(`low stock: ${prod.name}`, "red");
+              }
+            }
+          }
+        }
+        const pos = pointAt(from, to, a.p);
+        trails.push({ x: pos.x, y: pos.y, color: a.color, life: 1 });
+        return true;
+      });
+      trails.forEach(tr => tr.life -= dt * .45);
+      trails = trails.filter(tr => tr.life > 0).slice(-900);
+    }
+    function pointAt(a, b, p) {
+      return { x: a.x + (b.x - a.x) * p, y: a.y + (b.y - a.y) * p };
+    }
+    function sx(x) { return ox + x * scale; }
+    function sy(y) { return oy + y * scale; }
+    function drawText(text, x, y, size, color, align = "left", weight = "600") {
+      ctx.fillStyle = color;
+      ctx.font = `${weight} ${size * scale}px Inter, Arial`;
+      ctx.textAlign = align;
+      ctx.textBaseline = "middle";
+      ctx.fillText(text, sx(x), sy(y));
+    }
+    function draw(simMin) {
+      ctx.clearRect(0, 0, W, H);
+      ctx.fillStyle = C.bg;
+      ctx.fillRect(0, 0, W, H);
+      ctx.save();
+      ctx.globalAlpha = .75;
+      ctx.strokeStyle = C.line;
+      ctx.lineWidth = 1;
+      for (let x = 0; x < 640; x += 22) {
+        ctx.beginPath(); ctx.moveTo(sx(x), sy(0)); ctx.lineTo(sx(x), sy(560)); ctx.stroke();
+      }
+      for (let y = 0; y < 560; y += 22) {
+        ctx.beginPath(); ctx.moveTo(sx(0), sy(y)); ctx.lineTo(sx(640), sy(y)); ctx.stroke();
+      }
+      ctx.restore();
+
+      ctx.fillStyle = "#120c12";
+      roundRect(sx(86), sy(130), 542 * scale, 408 * scale, 4 * scale, true, false);
+      ctx.strokeStyle = C.line;
+      ctx.lineWidth = 2 * scale;
+      roundRect(sx(86), sy(130), 542 * scale, 408 * scale, 4 * scale, false, true);
+
+      zones.forEach(zone => {
+        const h = Math.min(.85, (heat[zone.id] || 0) / 160);
+        const isSpine = zone.kind === "spine";
+        const isGarden = zone.kind === "garden";
+        ctx.fillStyle = isSpine ? "#191019" : isGarden ? "rgba(255,61,104,.10)" : `rgba(255,61,104,${.045 + h * .28})`;
+        roundRect(sx(zone.x), sy(zone.y), zone.w * scale, zone.h * scale, 7 * scale, true, false);
+        ctx.strokeStyle = C.line;
+        ctx.lineWidth = 1.2;
+        roundRect(sx(zone.x), sy(zone.y), zone.w * scale, zone.h * scale, 7 * scale, false, true);
+        const labelSize = zone.kind === "strip" ? 7.5 : isSpine ? 8.5 : 9.5;
+        if (zone.kind === "strip") {
+          ctx.save();
+          ctx.translate(sx(zone.x + zone.w / 2), sy(zone.y + zone.h / 2));
+          ctx.rotate(-Math.PI / 2);
+          ctx.fillStyle = C.muted;
+          ctx.font = `700 ${labelSize * scale}px Inter, Arial`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(zone.label, 0, 0);
+          ctx.restore();
+        } else {
+          drawText(zone.label, zone.x + zone.w / 2, zone.y + zone.h / 2 - 6, labelSize, isGarden ? C.pink : C.text, "center", "800");
+          if (!isSpine) drawText(`${zone.dwell}m dwell`, zone.x + zone.w / 2, zone.y + zone.h / 2 + 11, 8, C.muted, "center", "500");
+        }
+      });
+
+      trails.forEach(tr => {
+        ctx.globalAlpha = tr.life * .24;
+        ctx.fillStyle = C.blue;
+        ctx.beginPath();
+        ctx.arc(sx(tr.x), sy(tr.y), 5.5 * scale, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.globalAlpha = 1;
+
+      agents.forEach(a => {
+        const from = a.route[a.i], to = a.route[a.i + 1];
+        if (!to) return;
+        const p = pointAt(from, to, a.p);
+        ctx.fillStyle = a.color;
+        ctx.beginPath();
+        ctx.arc(sx(p.x), sy(p.y), 6.5 * scale, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#fff";
+        ctx.lineWidth = 1.3 * scale;
+        ctx.stroke();
+        if (a.pause > 0) {
+          drawText(a.term, p.x, p.y - 18, 9, C.text, "center", "700");
+        }
+      });
+
+    }
+    function roundRect(x, y, w, h, r, fill, stroke) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      if (fill) ctx.fill();
+      if (stroke) ctx.stroke();
+    }
+    function updateUi(simMin) {
+      const day = Math.floor(simMin / 720);
+      const min = simMin % 720;
+      const hour24 = 8 + Math.floor(min / 60);
+      const minute = Math.floor(min % 60);
+      const suffix = hour24 >= 12 ? "PM" : "AM";
+      const h12 = hour24 > 12 ? hour24 - 12 : hour24;
+      document.getElementById("clock").textContent = `Saturday ${h12}:${String(minute).padStart(2,"0")} ${suffix}`;
+      document.getElementById("mode").textContent = day % 3 === 0 ? "Weekend DIY surge" : "Store traffic model";
+      document.getElementById("events").textContent = `${counters.eventCount.toLocaleString()} synthetic events`;
+      document.getElementById("trips").textContent = counters.trips.toLocaleString();
+      document.getElementById("searches").textContent = counters.searches.toLocaleString();
+      document.getElementById("dwell").textContent = Math.round(counters.dwell).toLocaleString();
+      document.getElementById("alerts").textContent = counters.alerts.toLocaleString();
+      const totalIntent = Object.values(searchCounts).reduce((a,b) => a + b, 0) || 1;
+      document.getElementById("intentTotal").textContent = totalIntent.toLocaleString();
+      document.getElementById("intentRows").innerHTML = Object.entries(searchCounts).sort((a,b) => b[1] - a[1]).slice(0, 5).map(([k,v]) => `
+        <div class="row"><div>${k}<div class="bar"><div class="fill" style="width:${v / totalIntent * 100}%"></div></div></div><b>${v}</b></div>
+      `).join("");
+      document.getElementById("shelfRows").innerHTML = products.map(p => {
+        const pct = p.qty / p.max * 100;
+        return `<div class="row"><div>${p.name}<small>${Math.round(pct)}% shelf availability</small><div class="bar"><div class="fill" style="width:${pct}%;background:${pct < 18 ? C.red : pct < 35 ? C.amber : C.green}"></div></div></div><b>${p.qty}</b></div>`;
+      }).join("");
+      document.getElementById("stream").innerHTML = events.map(e => `<div class="row"><div>${e.text}<small>${Math.max(1, Math.round(e.age))}s ago</small></div><span class="tag ${e.type === "red" ? "red" : "green"}">${e.type === "red" ? "alert" : "event"}</span></div>`).join("");
+    }
+    function loop(now) {
+      const elapsed = (now - t0) / 1000;
+      const dt = Math.min(.08, elapsed - (loop.last || elapsed));
+      loop.last = elapsed;
+      const simMin = (elapsed * 38) % 2160;
+      update(dt, simMin);
+      draw(simMin);
+      if (now - lastUi > 250) {
+        updateUi(simMin);
+        lastUi = now;
+      }
+      requestAnimationFrame(loop);
+    }
+    for (let i = 0; i < 16; i++) spawnAgent(120 + i * 6);
+    updateUi(120);
+    requestAnimationFrame(loop);
+
+    document.getElementById("recordBtn").addEventListener("click", async () => {
+      const status = document.getElementById("recordStatus");
+      if (!canvas.captureStream || !window.MediaRecorder) {
+        status.textContent = "Recording is not supported in this browser. Use Chrome or Edge.";
+        return;
+      }
+      const chunks = [];
+      const stream = canvas.captureStream(30);
+      const recorder = new MediaRecorder(stream, { mimeType: "video/webm;codecs=vp9" });
+      recorder.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+      recorder.onstop = () => {
+        const blob = new Blob(chunks, { type: "video/webm" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "offload_synthetic_data_sim.webm";
+        a.click();
+        status.textContent = "Recording complete: offload_synthetic_data_sim.webm";
+      };
+      recorder.start();
+      status.textContent = "Recording 45 seconds...";
+      setTimeout(() => recorder.stop(), 45000);
+    });
+  </script>
+</body>
+</html>
